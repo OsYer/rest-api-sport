@@ -1,10 +1,10 @@
 export const querys = {
   getAllProducts: "SELECT * FROM Productos",
   getProductById: "SELECT * FROM Productos WHERE ID_producto = @IdProducto",
-  addNewProduct: "INSERT INTO Productos (nombre, descripcion, precio, precioDescuento, ID_categoria, ID_subcategoria, ID_marca) VALUES (@nombre, @descripcion, @precio, @precioDescuento, @ID_categoria, @ID_subcategoria, @ID_marca)",
+  addNewProduct: "INSERT INTO Productos (nombre, descripcion, precio, precioDescuento, existencias, ID_categoria, ID_subcategoria, ID_marca) VALUES (@nombre, @descripcion, @precio, @precioDescuento, @existencias, @ID_categoria, @ID_subcategoria, @ID_marca)",
   deleteProduct: "DELETE FROM Productos WHERE ID_producto = @IdProducto",
   getTotalProducts: "SELECT COUNT(*) FROM Productos",
-  updateProductById: "UPDATE Productos SET nombre = @nombre, descripcion = @descripcion, precio = @precio, precioDescuento = @precioDescuento, ID_categoria = @ID_categoria, ID_subcategoria = @ID_subcategoria, ID_marca = @ID_marca WHERE ID_producto = @IdProducto",
+  updateProductById: "UPDATE Productos SET nombre = @nombre, descripcion = @descripcion, precio = @precio, precioDescuento = @precioDescuento, existencias = @existencias, ID_categoria = @ID_categoria, ID_subcategoria = @ID_subcategoria, ID_marca = @ID_marca WHERE ID_producto = @IdProducto",
   getAllProductsWithRelations: `
   SELECT 
   P.ID_producto,
@@ -12,6 +12,7 @@ export const querys = {
   P.descripcion,
   P.precio,
   P.precioDescuento,
+  p.existencias,
   C.ID_categoria,
   C.nombre AS nombreCategoria,
   SC.ID_subcategoria,
@@ -45,11 +46,12 @@ export const querysUsers = {
 
 
 export const querysToken = {
-  addNewUserToken: "INSERT INTO RecuperacionContraseña (ID_usuario, CodigoRecuperacion) VALUES (@IdUser, @recovery_code);",
-  getUserToken: "SELECT * FROM RecuperacionContraseña WHERE ID_usuario = @IdUser;",
-  updateTokenById: "UPDATE RecuperacionContraseña SET CodigoRecuperacion = @recovery_code WHERE ID_usuario = @IdUser;",
-  deleteTokenById: "DELETE FROM RecuperacionContraseña WHERE ID_usuario = @IdUser;"
+  addNewUserToken: "INSERT INTO Tokens (ID_usuario, token, expiracionToken) VALUES (@IdUser, @token, DATEADD(MINUTE, 30, GETDATE()));",
+  getUserToken: "SELECT * FROM Tokens WHERE ID_usuario = @IdUser;",
+  updateTokenById: "UPDATE Tokens SET token = @token, expiracionToken = DATEADD(MINUTE, 30, GETDATE()) WHERE ID_usuario = @IdUser;",
+  deleteTokenById: "DELETE FROM Tokens WHERE ID_usuario = @IdUser;"
 };
+
 
 export const querysCategoriasProductos = {
   getAllCategoriasProductos: "SELECT * FROM CategoriasProductos",

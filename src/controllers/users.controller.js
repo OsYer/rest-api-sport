@@ -1,4 +1,5 @@
 import { getConnection, querysUsers, sql } from "../database";
+const bcrypt = require('bcrypt');
 
 export const getUsers = async (req, res) => {
   try {
@@ -31,13 +32,15 @@ export const createNewUser = async (req, res) => {
       .input("telefono", sql.VarChar, telefono)
       .query(querysUsers.getUserByTelephone);
 
-      if (existingUser.recordset.length > 0) {
-        return res.status(409).json({ msg: "Un usuario con ese correo ya existe" });
-      }
-      
-      if (existingUserTelephone.recordset.length > 0) {
-        return res.status(409).json({ msg: "Un usuario con ese teléfono ya existe" });
-      }
+    if (existingUser.recordset.length > 0) {
+      return res.status(409).json({ msg: "Un usuario con ese correo ya existe" });
+    }
+    
+    if (existingUserTelephone.recordset.length > 0) {
+      return res.status(409).json({ msg: "Un usuario con ese teléfono ya existe" });
+    }
+
+    const hashedPassword = await bcrypt.hash(contrasena, 10);
 
     await pool
       .request()
@@ -48,15 +51,16 @@ export const createNewUser = async (req, res) => {
       .input("genero", sql.VarChar, genero)
       .input("correoElectronico", sql.VarChar, correoElectronico)
       .input("telefono", sql.BigInt, telefono)
-      .input("contraseña", sql.VarChar, contrasena)
+      .input("contraseña", sql.VarChar, hashedPassword) // Se almacena la contraseña hasheada
       .input("direccion", sql.VarChar, direccion)
       .query(querysUsers.addNewUser);
 
-    res.json({ nombre, primerApellido, segundoApellido, fechaNacimiento, genero, correoElectronico, telefono, contrasena, direccion });
+    res.json({ nombre, primerApellido, segundoApellido, fechaNacimiento, genero, correoElectronico, telefono, contrasena: hashedPassword, direccion });
   } catch (error) {
     res.status(500).send(error.message);
   }
 };
+
 
 
 export const getUserById = async (req, res) => {

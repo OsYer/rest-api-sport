@@ -53,33 +53,43 @@ export const getAllProductsWithRelations = async (req, res) => {
 
 
 export const createNewProduct = async (req, res) => {
-  const { nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento } = req.body;
-  const { imagenUrl } = req.body;
-
-  if (!nombre || !descripcion || !ID_categoria || !ID_subcategoria || !ID_marca || !precio || !precioDescuento || !imagenUrl) {
-    return res.status(400).json({ msg: 'Bad Request. Please provide all required fields' });
-  }
+  const { nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento, existencias, imagenUrl } = req.body;
 
   try {
+    if (!nombre || !descripcion || !ID_categoria || !ID_subcategoria || !ID_marca || !precio || !precioDescuento || !existencias || !imagenUrl ) {
+      return res.status(400).json({ msg: 'Solicitud incorrecta. Por favor proporcione todos los campos requeridos' });
+    }
+
     const pool = await getConnection();
+    const transaction = pool.transaction();
+    await transaction.begin();
 
-    await pool
-      .request()
-      .input('nombre', sql.NVarChar, nombre)
-      .input('descripcion', sql.NVarChar, descripcion)
-      .input('ID_categoria', sql.Int, ID_categoria)
-      .input('ID_subcategoria', sql.Int, ID_subcategoria)
-      .input('ID_marca', sql.Int, ID_marca)
-      .input('precio', sql.Decimal(10, 2), precio)
-      .input('precioDescuento', sql.Decimal(10, 2), precioDescuento)
-      .input('imagenUrl', sql.NVarChar, imagenUrl)
-      .query(querys.addNewProduct);
+    try {
+      await transaction
+        .request()
+        .input('nombre', sql.NVarChar, nombre)
+        .input('descripcion', sql.NVarChar, descripcion)
+        .input('ID_categoria', sql.Int, ID_categoria)
+        .input('ID_subcategoria', sql.Int, ID_subcategoria)
+        .input('ID_marca', sql.Int, ID_marca)
+        .input('precio', sql.Decimal(10, 2), precio)
+        .input('precioDescuento', sql.Decimal(10, 2), precioDescuento)
+        .input('existencias', sql.Int, existencias)
+        .input('imagenUrl', sql.NVarChar, imagenUrl)
+        .query(querys.addNewProduct);
 
-    res.json({ nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento, imagenUrl });
+      await transaction.commit();
+      res.json({ msg: 'Producto agregado correctamente', data: { nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento, existencias, imagenUrl } });
+    } catch (error) {
+      await transaction.rollback();
+      res.status(500).json({ msg: 'Error interno del servidor al agregar el producto', error: error.message });
+    }
   } catch (error) {
-    res.status(500).send(error.message);
+    res.status(500).json({ msg: 'Error interno del servidor', error: error.message });
   }
 };
+
+
 
 export const getProductById = async (req, res) => {
   try {
@@ -125,9 +135,9 @@ export const getTotalProducts = async (req, res) => {
 };
 
 export const updateProductById = async (req, res) => {
-  const { nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento } = req.body;
+  const { nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento, existencias } = req.body;
 
-  if (!nombre || !descripcion || !ID_categoria || !ID_subcategoria || !ID_marca || !precio || !precioDescuento) {
+  if (!nombre || !descripcion || !ID_categoria || !ID_subcategoria || !ID_marca || !precio || !precioDescuento || !existencias) {
     return res.status(400).json({ msg: 'Bad Request. Please provide all required fields' });
   }
 
@@ -143,10 +153,11 @@ export const updateProductById = async (req, res) => {
       .input('ID_marca', sql.Int, ID_marca)
       .input('precio', sql.Decimal(10, 2), precio)
       .input('precioDescuento', sql.Decimal(10, 2), precioDescuento)
+      .input('existencias', sql.Int, existencias)
       .input('IdProducto', sql.Int, req.params.id)
       .query(querys.updateProductById);
 
-    res.json({ nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento });
+    res.json({ nombre, descripcion, ID_categoria, ID_subcategoria, ID_marca, precio, precioDescuento, existencias });
   } catch (error) {
     res.status(500).send(error.message);
   }
