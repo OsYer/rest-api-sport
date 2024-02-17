@@ -4,3 +4,6 @@ export { querysUsers } from "./querys";
 export { querysCategoriasProductos } from "./querys";
 export { querysSubcategoriasProductos } from "./querys";
 export { querysMarcas } from "./querys";
+export { querysEstadoCuenta } from "./querys";
+export { querysEstadoUsuario } from "./querys";
+export { querysRoles } from "./querys";

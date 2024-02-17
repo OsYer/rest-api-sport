@@ -8,6 +8,8 @@ import marcasProductos from "./routes/marcasProductos.routes";
 import TokenRoutes from "./routes/token.routes";
 import emailRoutes from "./routes/email.routes";
 import sendMethod from "./routes/send.routes";
+import estadoCuentaRoutes from "./routes/estadoCuenta.routes";
+import estadoUsuarioRoutes from "./routes/estadoUsuario.routes";
 import cloudinaryRoutes from "./routes/cloudinary.routes";
 import morgan from "morgan";
 
@@ -34,5 +36,7 @@ app.use("/api", TokenRoutes);
 app.use("/api", categoriasProdutosRoutes);
 app.use("/api", subcategoriasProductosRoutes);
 app.use("/api", marcasProductos);
+app.use("/api", estadoCuentaRoutes);
+app.use("/api", estadoUsuarioRoutes);
 
 export default app;
