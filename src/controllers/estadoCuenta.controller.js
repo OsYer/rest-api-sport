@@ -73,7 +73,7 @@ export const updateEstadoCuentaById = async (req, res) => {
 export const updateIntentosFallidos = async (req, res) => {
   const { ID_estadoCuenta, intentosFallidos } = req.body;
 
-  console.log("ID_estadoCuenta, intentosFallidos", ID_estadoCuenta, intentosFallidos)
+  // console.log("ID_estadoCuenta, intentosFallidos", ID_estadoCuenta, intentosFallidos)
 
   if (ID_estadoCuenta == null || intentosFallidos == null) {
     return res.status(400).json({ msg: 'Bad Request. Please provide both ID_estadoCuenta and intentosFallidos' });
@@ -118,7 +118,7 @@ export const bloquearCuenta = async (req, res) => {
 
 export const desbloquearCuenta = async (req, res) => {
   const { ID_estadoCuenta } = req.body;
-  console.log("desbloquearCuenta", ID_estadoCuenta)
+  // console.log("desbloquearCuenta", ID_estadoCuenta)
   try {
     const pool = await getConnection();
     await pool

@@ -73,3 +73,65 @@ export const sendMethod = async (req, res) => {
     return res.status(500).json({ msg: error.message });
   }
 };
+
+export const enviarCorreoBloquear = async (req, res) => {
+  const { intentosFallidos, email } = req.body;
+  console.log("intentosFallidos", intentosFallidos, email)
+  if ((intentosFallidos == null || intentosFallidos === '') || (email == null || email === '')) {
+    return res.status(400).json({ msg: 'Bad Request. Please enter all fields' });
+  }
+
+  try {
+
+
+    const response = await fetch('http://localhost:3001/api/envio-cuenta-nobloqueada', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: email,
+        intentosFallidos
+      }),
+    });
+    // console.log("NObloqueddo", response)
+    if (!response.ok) {
+      throw new Error('Fallo al enviar correo cuenta por bloquear');
+    }
+    // console.log("Envio correo casi bloqueado con exito")
+    // res.status(200).json({ message: 'Envio correo casi bloqueado con exito' });
+  } catch (error) {
+    console.log('error5005 ', error.message)
+    return res.status(500).json({ msg: error.message });
+  }
+};
+
+export const enviarCorreoBloqueado = async (req, res) => {
+  const { tiempoBloqueo, email } = req.body;
+  console.log("tiempoBloqueo", tiempoBloqueo, email)
+  if ((tiempoBloqueo == null || tiempoBloqueo === '') || (email == null || email === '')) {
+    return res.status(400).json({ msg: 'Bad Request. Please enter all fields' });
+  }
+
+  try {
+    const response = await fetch('http://localhost:3001/api/envio-cuenta-bloqueado', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: email,
+        tiempoBloqueo
+      }),
+    });
+    // console.log("resbloqueddo", response)
+    if (!response.ok) {
+      throw new Error('Fallo al enviar tu correo de recuperación');
+    }
+    // console.log("Envio correo bloqueado con exito")
+    // res.status(200).json({ message: 'Envio correo bloqueado con exito' });
+  } catch (error) {
+    console.log('error5005 ', error.message)
+    return res.status(500).json({ msg: error.message });
+  }
+};

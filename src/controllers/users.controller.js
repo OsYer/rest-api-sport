@@ -1,6 +1,8 @@
 import { getConnection, querysUsers, sql } from "../database";
 import { addNewEstadoCuenta, getEstadoCuentaByUserId, updateIntentosFallidos, bloquearCuenta, desbloquearCuenta } from "../controllers/estadoCuenta.controller";
 import { addNewEstadoUsuario } from "../controllers/estadoUsuario.controller";
+import { enviarCorreoBloqueado, enviarCorreoBloquear } from "../controllers/send.controlller";
+
 import bcrypt from 'bcrypt';
 const moment = require('moment-timezone');
 const axios = require('axios');
@@ -186,7 +188,7 @@ export const login = async (req, res) => {
   const { correoElectronico, contraseña } = req.body;
 
   if ((correoElectronico == null || contraseña == null) || (correoElectronico == '' || contraseña == '')) {
-    return res.status(400).json({ msg: "Solicitud incorrecta. Por favor proporcione tanto el correo electrónico como la contraseña" });
+    return res.status(400).json({ msg: "Solicitud incorrecta. Por favor proporcione tanto el correo electrónico como la contraseña." });
   }
 
   try {
@@ -197,56 +199,67 @@ export const login = async (req, res) => {
       .query(querysUsers.getUserByEmail);
 
     if (result.recordset.length === 0) {
-      return res.status(401).json({ msg: "Correo electrónico o contraseña no válidos" });
+      return res.status(401).json({ msg: "Correo electrónico o contraseña no válidos." });
     }
 
     const user = result.recordset[0];
 
-    const estadoCuentaResponse = await getEstadoCuentaByUserId(user.ID_usuario);
-    const estadoCuenta = estadoCuentaResponse[0];
-    console.log("estado ", estadoCuenta)
+    const validarEstadoCuentaBloquedo = await getEstadoCuentaByUserId(user.ID_usuario);
+    const validarEstadoCuenta = validarEstadoCuentaBloquedo[0];
 
-    if (!estadoCuenta.estado) {
+    if (!validarEstadoCuenta.estado) {
       const horaActual = await obtenerHoraActual();
+      const tiempoDesbloqueo = new Date(validarEstadoCuenta.tiempoDesbloqueo).toISOString();
 
-      const tiempoDesbloqueo = new Date(estadoCuenta.tiempoDesbloqueo).toISOString();
       console.log(horaActual, ">", tiempoDesbloqueo)
+
       if (horaActual > tiempoDesbloqueo) {
-          await desbloquearCuenta({ body: { ID_estadoCuenta: estadoCuenta.ID_estadoCuenta } });
+        await desbloquearCuenta({ body: { ID_estadoCuenta: validarEstadoCuenta.ID_estadoCuenta } });
       } else {
-          return res.status(401).json({ msg: "La cuenta está bloqueada" });
+        return res.status(401).json({ msg: "La cuenta está bloqueada. Para más información, verifica tu correo electrónico." });
       }
     }
 
-    const estadoCuentaResponse2 = await getEstadoCuentaByUserId(user.ID_usuario);
-    const estadoCuenta2 = estadoCuentaResponse2[0];
+    const estadoCuentaResponse = await getEstadoCuentaByUserId(user.ID_usuario);
+    const estadoCuenta = estadoCuentaResponse[0];
 
-    console.log("estadoCuenta2", estadoCuenta2)
-
+    console.log("estadoCuenta", estadoCuenta)
     const hashedPassword = user.contraseña;
     const passwordMatch = await bcrypt.compare(contraseña, hashedPassword);
 
     if (!passwordMatch) {
-      estadoCuenta2.intentosFallidos += 1;
-      const intentosFallidos = estadoCuenta2.intentosFallidos;
-      console.log("intentosFallidos",intentosFallidos)
-      await updateIntentosFallidos({ body: { ID_estadoCuenta: estadoCuenta2.ID_estadoCuenta, intentosFallidos: estadoCuenta2.intentosFallidos } });
-      
+      const tiempoBloqueoMinutos = 1;
+      estadoCuenta.intentosFallidos += 1;
+      const intentosFallidos = estadoCuenta.intentosFallidos;
+
+      await updateIntentosFallidos({ body: { ID_estadoCuenta: estadoCuenta.ID_estadoCuenta, intentosFallidos: estadoCuenta.intentosFallidos } });
+
       const maxIntentosFallidos = 3;
       if (intentosFallidos >= maxIntentosFallidos) {
-        await bloquearCuenta({ body: { ID_usuario: user.ID_usuario, tiempoBloqueoMinutos : 1 } });
-        return res.status(401).json({ msg: "La cuenta está bloqueada debido a múltiples intentos fallidos de inicio de sesión" });
+
+        await bloquearCuenta({ body: { ID_usuario: user.ID_usuario, tiempoBloqueoMinutos } });
+        // Enviar correo electrónico sobre el bloqueo de la cuenta
+        const estadoCuentaBloqueadaResponse = await getEstadoCuentaByUserId(user.ID_usuario);
+        const estadoCuentaBloqueada = estadoCuentaBloqueadaResponse[0];
+        
+        
+        await enviarCorreoBloqueado({ body: { tiempoBloqueo: estadoCuentaBloqueada.tiempoDesbloqueo, email: user.correoElectronico } });
+        return res.status(401).json({ msg: `La cuenta está bloqueada debido a múltiples intentos fallidos de inicio de sesión. Debes esperar ${tiempoBloqueoMinutos} minutos.` });
       }
-      if(intentosFallidos == 3){
-        return res.status(401).json({ msg: "Correo electrónico o contraseña no válidos, último intento para bloquear la cuenta: "+ intentosFallidos });
+      if (intentosFallidos == 3) {
+        // Enviar correo electrónico sobre el último intento de bloqueo de la cuenta
+        await enviarCorreoBloquear({ body: { intentosFallidos, email: user.correoElectronico } });
+        return res.status(401).json({ msg: `Correo electrónico o contraseña no válidos. Último intento para bloquear la cuenta: ${intentosFallidos}.` });
       }
-      else{
-        return res.status(401).json({ msg: "Correo electrónico o contraseña no válidos, intentos fallidos: "+ intentosFallidos});
+      else {
+        // Enviar correo electrónico sobre los intentos fallidos de inicio de sesión
+        await enviarCorreoBloquear({ body: { intentosFallidos, email: user.correoElectronico } });
+        return res.status(401).json({ msg: `Correo electrónico o contraseña no válidos. Intentos fallidos: ${intentosFallidos}.` });
       }
     }
 
-    estadoCuenta2.intentosFallidos = 0;
-    await updateIntentosFallidos({ body: { ID_estadoCuenta: estadoCuenta2.ID_estadoCuenta, intentosFallidos: estadoCuenta2.intentosFallidos } });
+    estadoCuenta.intentosFallidos = 0;
+    await updateIntentosFallidos({ body: { ID_estadoCuenta: estadoCuenta.ID_estadoCuenta, intentosFallidos: estadoCuenta.intentosFallidos } });
 
     res.json(user);
   } catch (error) {
