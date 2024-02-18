@@ -45,4 +45,4 @@ app.use("/api", marcasProductos);
 app.use("/api", estadoCuentaRoutes);
 app.use("/api", estadoUsuarioRoutes);
 
-export default app;
+export { app };
