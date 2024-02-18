@@ -1,7 +1,7 @@
 import { getConnection, querysUsers, sql } from "../database";
 import { addNewEstadoCuenta, getEstadoCuentaByUserId, updateIntentosFallidos, bloquearCuenta, desbloquearCuenta } from "../controllers/estadoCuenta.controller";
 import { addNewEstadoUsuario } from "../controllers/estadoUsuario.controller";
-import { enviarCorreoBloqueado, enviarCorreoBloquear } from "../controllers/send.controlller";
+import { enviarCorreoBloqueado, enviarCorreoBloquear, enviarCorreoNuevoInicioSesion } from "../controllers/send.controlller";
 
 import bcrypt from 'bcrypt';
 const moment = require('moment-timezone');
@@ -260,7 +260,7 @@ export const login = async (req, res) => {
 
     estadoCuenta.intentosFallidos = 0;
     await updateIntentosFallidos({ body: { ID_estadoCuenta: estadoCuenta.ID_estadoCuenta, intentosFallidos: estadoCuenta.intentosFallidos } });
-
+    await enviarCorreoNuevoInicioSesion({ body: { email: user.correoElectronico } });
     res.json(user);
   } catch (error) {
     res.status(500).json({ msg: "Error interno del servidor", error: error.message });

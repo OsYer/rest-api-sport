@@ -135,3 +135,31 @@ export const enviarCorreoBloqueado = async (req, res) => {
     return res.status(500).json({ msg: error.message });
   }
 };
+
+export const enviarCorreoNuevoInicioSesion = async (req, res) => {
+  const { email } = req.body;
+  if ((email == null || email === '')) {
+    return res.status(400).json({ msg: 'Bad Request. Please enter all fields' });
+  }
+
+  try {
+    const response = await fetch('http://localhost:3001/api/envio-cuenta-nueva-sesion', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: email,
+      }),
+    });
+    // console.log("NObloqueddo", response)
+    if (!response.ok) {
+      throw new Error('Fallo al enviar correo cuenta por bloquear');
+    }
+    // console.log("Envio correo casi bloqueado con exito")
+    // res.status(200).json({ message: 'Envio correo casi bloqueado con exito' });
+  } catch (error) {
+    console.log('error5005 ', error.message)
+    return res.status(500).json({ msg: error.message });
+  }
+};
