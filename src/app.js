@@ -26,6 +26,12 @@ app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+// Manejo de la ruta raíz
+app.get("/", (req, res) => {
+  res.send("¡Hola, este es mi servidor API!");
+});
+
+
 // Routes
 app.use("/api", productRoutes);
 app.use("/api", usersRoutes);
